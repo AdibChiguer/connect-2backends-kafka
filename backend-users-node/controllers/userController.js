@@ -1,7 +1,10 @@
-const bcrypt = require("bcryptjs"); // Import bcrypt for password hashing
+const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { sendMessage } = require("../config/kafka");
+const axios = require("axios");
+
+const SPRING_BOOT_BASE_URL = "http://localhost:8080/api";
 
 exports.borrowBook = async (req, res) => {
   try {
@@ -100,5 +103,61 @@ exports.deleteUser = async (req, res) => {
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getAvailableBooks = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
+    const userId = decoded.id;
+
+    const response = await axios.get(`${process.env.SPRING_BOOT_BASE_URL}/books/available/${userId}`);
+    const books = response.data;
+
+    return res.status(200).json(books);
+  } catch (error) {
+    console.error("Error fetching available books:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getBorrowedBooks = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
+    const userId = decoded.id;
+
+    const response = await axios.get(`${process.env.SPRING_BOOT_BASE_URL}/loans/borrowed/${userId}`);
+    const books = response.data;
+
+    return res.status(200).json(books);
+  } catch (error) {
+    console.error("Error fetching available books:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
