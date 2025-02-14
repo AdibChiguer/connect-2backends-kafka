@@ -8,11 +8,6 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/component
 import { IconChecklist, IconPackages, IconObjectScan  } from "@tabler/icons-react";
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -27,7 +22,7 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }) {
+export function AppSidebar({ user , ...props }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       {/* Main Navigation */}
@@ -37,7 +32,7 @@ export function AppSidebar({ ...props }) {
 
       {/* User Section */}
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
 
       {/* Sidebar Rail */}

@@ -22,7 +22,7 @@ export default function Page() {
 
     axios({
       method: "POST",
-      url: "/users/register",
+      url: `${process.env.NEXT_PUBLIC_USER_SERVER_URI}/users/register`,
       data: {
         name : username,
         email,

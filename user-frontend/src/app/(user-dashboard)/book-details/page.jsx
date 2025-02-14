@@ -1,6 +1,8 @@
 "use client"
 import BooksTable from "@/components/booksTable";
-import React, { useState } from "react";
+import axios from "axios";
+import Cookies from "js-cookie";
+import React, { use, useEffect, useState } from "react";
 
 const Page = () => {
   const [books , setBooks] = useState([]);
@@ -16,7 +18,7 @@ const Page = () => {
 
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_USER_SERVER_URI}/books/borrowed`,
+        `${process.env.NEXT_PUBLIC_USER_SERVER_URI}/users/books/borrowed`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -24,11 +26,15 @@ const Page = () => {
         }
       );
       
-      console.log(res.data);
+      setBooks(res.data);
     } catch (err) {
       console.error("Invalid token or request error", err);
     }
   }
+
+  useEffect(() => {
+    getBorrowedBooks();
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -51,7 +57,8 @@ const Page = () => {
         ) : (
           <BooksTable 
             books={books}
-            bookAvailable={true}
+            setBooks={setBooks}
+            bookAvailable={false}
             bookDetails={true}
           />
         )}

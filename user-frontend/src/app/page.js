@@ -2,12 +2,15 @@
 import { LoginForm } from "@/components/login-form";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +22,7 @@ export default function Home() {
     setLoading(true);
     axios({
       method: "POST",
-      url: "/users/login",
+      url: `${process.env.NEXT_PUBLIC_USER_SERVER_URI}/users/login`,
       data: {
         email,
         password,
@@ -28,6 +31,7 @@ export default function Home() {
       .then((res) => {
         console.log(res);
         Cookies.set("token", res.data.token, { expires: 1 });
+        router.push("/dashboard");
       })
       .catch((err) => {
         console.error(err);

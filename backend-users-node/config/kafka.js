@@ -13,9 +13,12 @@ producer.on("error", (err) => {
 });
 
 const sendMessage = (message) => {
-  const payloads = [
-    { topic: "book-loans", messages: JSON.stringify(message) },
-  ];
+  const eventWithTimestamp = {
+    ...message,
+    timestamp: new Date().toISOString(),
+  };
+
+  const payloads = [{ topic: "book-loans", messages: JSON.stringify(eventWithTimestamp) }];
   producer.send(payloads, (err, data) => {
     if (err) console.error("Kafka send error:", err);
     else console.log("Kafka message sent:", data);

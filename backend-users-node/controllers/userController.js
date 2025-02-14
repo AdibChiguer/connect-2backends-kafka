@@ -8,9 +8,22 @@ const SPRING_BOOT_BASE_URL = "http://localhost:8080/api";
 
 exports.borrowBook = async (req, res) => {
   try {
-    console.log("Received borrow request:", req.body);
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+    
     const event = {
-      userId: req.body.userId,
+      userId: decoded.id,
       bookId: req.body.bookId,
       action: "borrow",
     };
@@ -23,9 +36,23 @@ exports.borrowBook = async (req, res) => {
 
 exports.returnBook = async (req, res) => {
   try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
     console.log("Received return request:", req.body);
     const event = {
-      userId: req.body.userId,
+      userId: decoded.id,
       bookId: req.body.bookId,
       action: "return",
     };
@@ -36,9 +63,25 @@ exports.returnBook = async (req, res) => {
   }
 };
 
-exports.getUserById = async (req, res) => {
+exports.getUser = async (req, res) => {
   try {
-    const user = await User.findOne({ userId: req.params.id }); // Query by userId instead of _id
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
+    const user = await User.findByPk(decoded.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -50,9 +93,9 @@ exports.getUserById = async (req, res) => {
 
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashedPassword });
+    const user = await User.create({ name, email, password: hashedPassword, role });
     res.status(201).json({ message: "User registered successfully", user });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -68,27 +111,8 @@ exports.loginUser = async (req, res) => {
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
     res.json({ token });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getAllUsers = async (req, res) => {
-  try {
-    const users = await User.findAll();
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getUserById = async (req, res) => {
-  try {
-    const user = await User.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -124,7 +148,7 @@ exports.getAvailableBooks = async (req, res) => {
 
     const userId = decoded.id;
 
-    const response = await axios.get(`${process.env.SPRING_BOOT_BASE_URL}/books/available/${userId}`);
+    const response = await axios.get(`http://127.0.0.1:8080/api/books/available/${userId}`);
     const books = response.data;
 
     return res.status(200).json(books);
@@ -152,12 +176,59 @@ exports.getBorrowedBooks = async (req, res) => {
 
     const userId = decoded.id;
 
-    const response = await axios.get(`${process.env.SPRING_BOOT_BASE_URL}/loans/borrowed/${userId}`);
+    const response = await axios.get(`${SPRING_BOOT_BASE_URL}/loans/borrowed/${userId}`);
     const books = response.data;
 
     return res.status(200).json(books);
   } catch (error) {
     console.error("Error fetching available books:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getAllBooks = async (req, res) => {
+  try {
+    console.log("hi")
+    const response = await axios.get(`${SPRING_BOOT_BASE_URL}/books`);
+    const books = response.data;
+    console.log("Books:", books); 
+    
+
+    return res.status(200).json(books);
+  } catch (error) {
+    console.error("Error fetching available books:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.addBook = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
+    const user = await User.findByPk(decoded.id);
+    if (!user) return res.status(404).json({ message: "Admin not found" });
+
+    if (user.role !== "admin") return res.status(403).json({ message: "Unauthorized: Admin access required" });
+
+    const { isbn, title, author, publicationYear, category, totalCopies } = req.body;
+    const response = await axios.post(`${SPRING_BOOT_BASE_URL}/books`, { isbn, title, author, publicationYear, category, totalCopies });
+    const book = response.data;
+
+    return res.status(201).json({ message: "Book added successfully", book });
+  } catch (error) {
+    console.error("Error adding book:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
