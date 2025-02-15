@@ -14,6 +14,7 @@ export async function middleware(req) {
 
   try {
     const { payload } = await jwtVerify(token, SECRET_KEY);
+    console.log({ name: "payload", value: payload });
 
     if (payload.role !== "user") {
       console.error("Unauthorized: is not an user");

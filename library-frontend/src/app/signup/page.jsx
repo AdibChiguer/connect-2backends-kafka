@@ -27,6 +27,7 @@ export default function Page() {
         name : username,
         email,
         password,
+        role: "admin",
       },
     })
       .then((res) => {
